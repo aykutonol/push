@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>push</name>
+  <version>0.0.0</version>
+  <description>A Planar Pushing Package</description>
+
+
+  <author>Aykut Onol</author>
+  <maintainer email="aonol@ece.neu.edu">Aykut Onol</maintainer>
+  <license>BSD</license>
+
+  <url type="website">https://github.com/aykutonol/push</url>
+  <url type="bugtracker">https://github.com/aykutonol/push/issues</url>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <depend>eigen</depend>
+
+</package>

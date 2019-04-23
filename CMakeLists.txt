@@ -19,11 +19,14 @@ include_directories(
 
 add_library(${PROJECT_NAME}
         src/push_control.cpp
+        src/mj_render.cpp
 )
 
 
-add_executable(main src/main.cpp)
-target_link_libraries(main  ${MUJOCO_DIR}/bin/libmujoco200nogl.so
-                            pthread
+add_executable(main src/main.cpp src/mj_render.cpp src/mj_render.h)
+target_link_libraries(main  ${MUJOCO_DIR}/bin/libmujoco200.so
+                            ${MUJOCO_DIR}/bin/libglew.so
+                            ${MUJOCO_DIR}/bin/libglfw.so.3
+                            GL
                             ${PROJECT_NAME}
 )

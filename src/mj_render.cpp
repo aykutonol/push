@@ -99,6 +99,41 @@ void MjRender::keyboard(GLFWwindow* window, int key, int scancode, int act, int 
             else
                 glfwRestoreWindow(window);
             break;
+        // cycle over frame rendering modes
+        case ';':
+            opt.frame = mjMAX(0, opt.frame-1);
+            break;
+         // cycle over frame rendering modes
+        case '\'':
+            opt.frame = mjMIN(mjNFRAME-1, opt.frame+1);
+            break;
+        // cycle over label rendering modes
+        case '.':
+            opt.label = mjMAX(0, opt.label-1);
+            break;
+        // cycle over label rendering modes
+        case '/':
+            opt.label = mjMIN(mjNLABEL-1, opt.label+1);
+            break;
+        // general toggle flag
+        default:
+            // toggle visualization flag
+            for( int i=0; i<mjNVISFLAG; i++ )
+                if( key==mjVISSTRING[i][2][0] )
+                    opt.flags[i] = !opt.flags[i];
+            // toggle rendering flag
+            for( int i=0; i<mjNRNDFLAG; i++ )
+                if( key==mjRNDSTRING[i][2][0] )
+                    scn.flags[i] = !scn.flags[i];
+            // toggle geom/site group
+            for( int i=0; i<mjNGROUP; i++ )
+                if( key==i+'0')
+                {
+                    if( mods & GLFW_MOD_SHIFT )
+                        opt.sitegroup[i] = !opt.sitegroup[i];
+                    else
+                        opt.geomgroup[i] = !opt.geomgroup[i];
+                }
     }
 }
 

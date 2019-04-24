@@ -3,6 +3,7 @@
 #include "mj_render.h"
 
 typedef Eigen::Matrix<mjtNum, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> eigMm;
+typedef Eigen::Matrix<mjtNum, Eigen::Dynamic, 1> eigVm;
 
 int main()
 {
@@ -23,9 +24,17 @@ int main()
     eigMm Jt(3, m->nv), Jr(3, m->nv), J(6, m->nv), Jinv(6, m->nv);
     Jt.setZero(); Jr.setZero(); J.setZero(); Jinv.setZero();
     int eeBodyID = mj_name2id(m, mjOBJ_BODY, "wrist_3_link");
+    mj_jacBody(m, d, Jt.data(), Jr.data(), eeBodyID);
+
+    Eigen::VectorXd u(m->nu), e(6), eePos(3), eePosD(3), qVel(m->nv);
+    e.setZero();
+    eePosD << -0.2, 0.25, 0.1;
+
+    double Kp = 1, Kd = 0.1;
 
     // simulation
-    while( !glfwWindowShouldClose(mr.window) )
+    bool stop = false;
+    while( !glfwWindowShouldClose(mr.window) && !stop)
     {
         if( !mr.paused )
         {
@@ -33,18 +42,40 @@ int main()
             while (d->time - simstart < 1.0/60.0)
             {
                 mj_step1(m, d);
-                mju_copy(d->ctrl, d->qfrc_bias, m->nu);
+                mju_copy(eePos.data(), d->xpos+eeBodyID*3, 3);
+                mju_copy(qVel.data(), d->qvel, m->nv);
+                mj_jacBody(m, d, Jt.data(), Jr.data(), eeBodyID);
+                J << Jt,
+                     Jr;
+                Jinv = J.inverse();
+                e.head(3) = eePosD-eePos;
+                u = Jinv*e;
+//                std:: cout << "e: " << e.transpose() << ", u: " << u.transpose() << std::endl;
+//              u = Jt.transpose()*(Kp*(eePosD-eePos));
+                for( int i=0; i<m->nu; i++ )
+                {
+                    d->qfrc_applied[i] = d->qfrc_bias[i];
+                    d->ctrl[i] = u(i);
+//                    d->ctrl[i] = u(i) - Kd*d->qvel[i] + d->qfrc_bias[i];
+                }
+//                int jID = 5;
+//                d->ctrl[jID] = 1e-2;
+
                 mj_step2(m, d);
+
+//                std::cout << "t: " << d->time << ", qvel: ";
+//                mju_printMat(d->qvel, 1, m->nv);
+//                if( fabs(d->ctrl[jID]-d->qvel[jID])<1e-6 )
+//                    stop = true;
             }
-            mj_jacBody(m, d, Jt.data(), Jr.data(), eeBodyID);
-            J << Jt,
-                    Jr;
-            Jinv = J.inverse();
-            std::cout << "Time: " << d->time << "\n";
-            std::cout << "Jt:\n" << Jt << "\nJr:\n" << Jr << "\nJ:\n" << J << "\n";
-            std::cout << "Jinv:\n" << Jinv << "\n--------------------------------\n";
+            if( fmod(d->time, 1.0) < 2e-2 )
+            {
+                std::cout << "t: " << d->time << "\tpos: " << eePos.transpose() <<
+                          ",\terror: " << (eePosD-eePos).transpose() <<
+                          ",\t\tnorm(error): " << (eePosD-eePos).norm() << "\n";
+            }
+            mr.render();
         }
-        mr.render();
     }
 
     return 0;

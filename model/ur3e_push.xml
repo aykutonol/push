@@ -68,12 +68,18 @@
     </worldbody>
     <!-- Actuators -->
     <actuator>
-      <motor name="shoulder_pan_motor"  joint="shoulder_pan_joint"  ctrllimited="true" ctrlrange="-330 330" />
-      <motor name="shoulder_lift_motor" joint="shoulder_lift_joint" ctrllimited="true" ctrlrange="-330 330" />
-      <motor name="elbow_motor"         joint="elbow_joint"         ctrllimited="true" ctrlrange="-150 150" />
-      <motor name="wrist_1_motor"       joint="wrist_1_joint"       ctrllimited="true" ctrlrange="-54 54" />
-      <motor name="wrist_2_motor"       joint="wrist_2_joint"       ctrllimited="true" ctrlrange="-54 54" />
-      <motor name="wrist_3_motor"       joint="wrist_3_joint"       ctrllimited="true" ctrlrange="-54 54" />
+        <velocity ctrllimited="true" ctrlrange="-3.15 3.15" kv="50"  name='shoulder_pan_vel'  joint='shoulder_pan_joint'/>
+        <velocity ctrllimited="true" ctrlrange="-3.15 3.15" kv="50"  name='shoulder_lift_vel' joint='shoulder_lift_joint' />
+        <velocity ctrllimited="true" ctrlrange="-3.20 3.20" kv="50"  name='forearm_vel'       joint='elbow_joint' />
+        <velocity ctrllimited="true" ctrlrange="-3.20 3.20" kv="2"   name='wrist_1_vel'       joint='wrist_1_joint' />
+        <velocity ctrllimited="true" ctrlrange="-3.20 3.20" kv="1"   name='wrist_2_vel'       joint='wrist_2_joint'/>
+        <velocity ctrllimited="true" ctrlrange="-3.20 3.20" kv="0.5" name='wrist_3_vel'       joint='wrist_3_joint'/>
+<!--      <motor name="shoulder_pan_motor"  joint="shoulder_pan_joint"  ctrllimited="true" ctrlrange="-330 330" />-->
+<!--      <motor name="shoulder_lift_motor" joint="shoulder_lift_joint" ctrllimited="true" ctrlrange="-330 330" />-->
+<!--      <motor name="elbow_motor"         joint="elbow_joint"         ctrllimited="true" ctrlrange="-150 150" />-->
+<!--      <motor name="wrist_1_motor"       joint="wrist_1_joint"       ctrllimited="true" ctrlrange="-54 54" />-->
+<!--      <motor name="wrist_2_motor"       joint="wrist_2_joint"       ctrllimited="true" ctrlrange="-54 54" />-->
+<!--      <motor name="wrist_3_motor"       joint="wrist_3_joint"       ctrllimited="true" ctrlrange="-54 54" />-->
     </actuator>
     <!-- Contacts -->
     <contact>

@@ -30,8 +30,6 @@ int main()
     e.setZero();
     eePosD << -0.2, 0.25, 0.1;
 
-    double Kp = 1, Kd = 0.1;
-
     // simulation
     bool stop = false;
     while( !glfwWindowShouldClose(mr.window) && !stop)
@@ -50,23 +48,12 @@ int main()
                 Jinv = J.inverse();
                 e.head(3) = eePosD-eePos;
                 u = Jinv*e;
-//                std:: cout << "e: " << e.transpose() << ", u: " << u.transpose() << std::endl;
-//              u = Jt.transpose()*(Kp*(eePosD-eePos));
                 for( int i=0; i<m->nu; i++ )
                 {
                     d->qfrc_applied[i] = d->qfrc_bias[i];
                     d->ctrl[i] = u(i);
-//                    d->ctrl[i] = u(i) - Kd*d->qvel[i] + d->qfrc_bias[i];
                 }
-//                int jID = 5;
-//                d->ctrl[jID] = 1e-2;
-
                 mj_step2(m, d);
-
-//                std::cout << "t: " << d->time << ", qvel: ";
-//                mju_printMat(d->qvel, 1, m->nv);
-//                if( fabs(d->ctrl[jID]-d->qvel[jID])<1e-6 )
-//                    stop = true;
             }
             if( fmod(d->time, 1.0) < 2e-2 )
             {

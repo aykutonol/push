@@ -20,11 +20,18 @@ int main()
     MjRender mr(m, d);
     PushControl pc(m);
 
-    int objBodyID = mj_name2id(m, mjOBJ_BODY, "object");
+
+
+    int objGeomID = mj_name2id(m, mjOBJ_GEOM, "object1");
     int objSiteID = mj_name2id(m, mjOBJ_SITE, "object1");
+    double rScallop = m->geom_size[objGeomID*3];
+    std::cout << "r = " << rScallop << "\n\n\n";
 
     Eigen::VectorXd eePosD(3), eeQuatD(4), objPos(3), objPosD(3);
     // aligned with -x axis
+    int axis = 0;   // x axis, i.e., first component
+    int dir = -1;   // direction
+    double target = -0.1;
     eeQuatD << 0, 0.7071, 0.7071, 0;
     double stepSize = 0.05;
 
@@ -46,15 +53,15 @@ int main()
                     // get the site position
                     mju_copy(eePosD.data(), d->site_xpos+objSiteID*3, 3);
                     // add the radius of the object
-                    eePosD[0] += 0.02;
+                    eePosD[axis] += rScallop;
                     // check if task is completed
-                    if( eePosD[0] < -0.1 )
+                    if( eePosD[0] < target )
                     {
                         printf("\nINFO: Task completed for %s.\n\n", "object1");
                         stop = true;
                     }
                     // if not complete, set new target along -x axis
-                    eePosD[0] += -stepSize;
+                    eePosD[axis] += dir*stepSize;
                 }
                 // calculate and set control input
                 pc.setControl(d, eePosD, eeQuatD);

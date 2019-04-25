@@ -1,9 +1,6 @@
-#include <Eigen/Dense>
-
+#include "push_control.h"
 #include "mj_render.h"
 
-/// Type definitions
-typedef Eigen::Matrix<mjtNum, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> eigMm;
 
 int main()
 {
@@ -19,30 +16,18 @@ int main()
     mjData* d = mj_makeData(m);
     mju_copy(d->qpos, m->key_qpos, m->nq);
     mj_forward(m, d);
-    // create rendering object
+    // create objects
     MjRender mr(m, d);
-    /// Parameters
-    // get the indices of actuated DOF
-    int dAct[m->nu];
-    for( int i=0; i<m->nu; i++ )
-    {
-        dAct[i] = m->jnt_dofadr[m->actuator_trnid[i*2]];
-    }
-    /// Initialize of Eigen variables
-    // Jacobian
-    eigMm Jt(3, m->nv), Jr(3, m->nv), J(6, m->nu), Jinv(6, m->nu);
-    Jt.setZero(); Jr.setZero(); J.setZero(); Jinv.setZero();
-    int eeBodyID = mj_name2id(m, mjOBJ_BODY, "wrist_3_link");
-    int eeSiteID = mj_name2id(m, mjOBJ_SITE, "end_effector");
-    int obSiteID = mj_name2id(m, mjOBJ_SITE, "object_rear");
-    // control and state vectors
-    Eigen::VectorXd u(m->nu), e(6), eePos(3), eePosD(3), eeQuat(4), eeQuatD(4), eeRVelD(3);
-    Eigen::VectorXd difQuat(4), negQuat(4), velTest(3);
-    e.setZero();
-//    eePosD << 0, 0.3, 0.05;
+    PushControl pc(m);
+
+    int objBodyID = mj_name2id(m, mjOBJ_BODY, "object");
+    int objSiteID = mj_name2id(m, mjOBJ_SITE, "object1");
+
+    Eigen::VectorXd eePosD(3), eeQuatD(4), objPos(3), objPosD(3);
+    // aligned with -x axis
     eeQuatD << 0, 0.7071, 0.7071, 0;
-    /// Controller gains
-    double Kp = 0.5, Kd = 0;
+    double stepSize = 0.05;
+
     /// Simulation
     bool stop = false;
     int tStep = 0;
@@ -55,33 +40,37 @@ int main()
             {
                 // step part 1
                 mj_step1(m, d);
-                // controller
-                mju_copy(eePosD.data(), d->site_xpos+obSiteID*3, 3);
-                mju_copy(eePos.data(),  d->site_xpos+eeSiteID*3, 3);
-//                mj_jacBody(m, d, Jt.data(), Jr.data(), eeBodyID);
-                mj_jacSite(m, d, Jt.data(), Jr.data(), eeSiteID);
-                J << Jt.block(0, dAct[0], 3, m->nu),
-                        Jr.block(0, dAct[0], 3, m->nu);
-                e.head(3) = eePosD - eePos;
-                mju_copy(eeQuat.data(), d->xquat+eeBodyID*4, 4);
-                mju_subQuat(eeRVelD.data(), eeQuatD.data(), eeQuat.data());
-                e.tail(3) = eeRVelD;
-                u = Kp*J.inverse()*e;
-                for (int i = 0; i < m->nu; i++) {
-                    d->qfrc_applied[dAct[i]] = d->qfrc_bias[dAct[i]];
-                    d->ctrl[i] = u(i) - Kd*d->qvel[dAct[i]];
+                // set reference for the controller
+                if( tStep%10 == 0 )
+                {
+                    // get the site position
+                    mju_copy(eePosD.data(), d->site_xpos+objSiteID*3, 3);
+                    // add the radius of the object
+                    eePosD[0] += 0.02;
+                    // check if task is completed
+                    if( eePosD[0] < -0.1 )
+                    {
+                        printf("\nINFO: Task completed for %s.\n\n", "object1");
+                        stop = true;
+                    }
+                    // if not complete, set new target along -x axis
+                    eePosD[0] += -stepSize;
                 }
+                // calculate and set control input
+                pc.setControl(d, eePosD, eeQuatD);
                 // step part 2
                 mj_step2(m, d);
                 tStep++;
             }
             if( fmod(d->time, 1.0) < 2e-2 && !stop )
             {
-                std::cout << "time: " << d->time << "\npos: " << eePos.transpose() <<
-                             ", quat: " << eeQuat.transpose() <<
-                             "\nposition error: " << e.head(3).transpose() <<
-                             "\norientation error: " << e.tail(3).transpose() <<
-                             "\nnorm(pe): " << e.head(3).norm() << ", norm(oe): " << e.tail(3).norm() <<
+                mju_copy(objPos.data(), d->site_xpos+objSiteID*3, 3);
+                std::cout << "time: " << d->time << "\neePos: " << pc.eePos.transpose() <<
+                             ", eeQuat: " << pc.eeQuat.transpose() <<
+                             "\nposition error: " << pc.e.head(3).transpose() <<
+                             "\norientation error: " << pc.e.tail(3).transpose() <<
+                             "\nnorm(pe): " << pc.e.head(3).norm() << ", norm(oe): " << pc.e.tail(3).norm() <<
+                             "\nobjPos: " << objPos.transpose() <<
                              "\n=======================================================\n";
             }
         }

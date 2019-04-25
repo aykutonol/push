@@ -24,16 +24,22 @@
         <geom name="table" pos="0.0 0 0" type="plane" size=".5 .6 0.1" group = "1" rgba=".1 .1 .1 1" />
     </body>
     <!-- Object: scallop 1 -->
-    <body name="object1" pos="0.05 0.3 0.045" quat="1 0 0 0" >
+    <body name="object1" pos="0.05 0.2 0.045" quat="1 0 0 0" >
         <joint name="object1" type="free" limited="false"/>
         <geom name="object1" type="cylinder" size="0.02 0.015" group="1" rgba=".9 0 0 1"/>
-        <site name="object1" pos="0 0 0.015" quat="0 0 0 1" type="sphere" size="1e-3" group="2" rgba="1 1 0 1" />
+        <site name="object1" pos="0 0 0.0175" quat="0 0 0 1" type="sphere" size="1e-3" group="2" rgba="1 1 0 1" />
     </body>
     <!-- Object: scallop 2 -->
-    <body name="object2" pos="0.05 0.4 0.045" quat="1 0 0 0" >
+    <body name="object2" pos="0.05 0.25 0.045" quat="1 0 0 0" >
         <joint name="object2" type="free" limited="false"/>
         <geom name="object2" type="cylinder" size="0.02 0.015" group="1" rgba=".9 0 0 1"/>
-        <site name="object2" pos="0 0 0.015" quat="0 0 0 1" type="sphere" size="1e-3" group="2" rgba="1 1 0 1" />
+        <site name="object2" pos="0 0 0.0175" quat="0 0 0 1" type="sphere" size="1e-3" group="2" rgba="1 1 0 1" />
+    </body>
+    <!-- Object: scallop 3 -->
+    <body name="object3" pos="0.05 0.3 0.045" quat="1 0 0 0" >
+        <joint name="object3" type="free" limited="false"/>
+        <geom name="object3" type="cylinder" size="0.02 0.015" group="1" rgba=".9 0 0 1"/>
+        <site name="object3" pos="0 0 0.0175" quat="0 0 0 1" type="sphere" size="1e-3" group="2" rgba="1 1 0 1" />
     </body>
     <!-- Robot -->
     <body name="base" pos="0 0 0">
@@ -70,7 +76,7 @@
                                 <geom type="mesh" contype="0" conaffinity="0" group="1" rgba="0.7 0.7 0.7 1" mesh="wrist3" />
                                 <geom name="wrist3" type="mesh" rgba="0.7 0.7 0.7 1" mesh="wrist3" />
                                 <geom size="0.005 0.005 0.005" pos="0 0.082 0" quat="0.707107 0 0 0.707107" type="box" />
-                                <site name="end_effector" type="sphere" size="1e-3" pos="0 0.0925 0.01" group="2" rgba="0 1 0 1" />
+                                <site name="end_effector" type="sphere" size="1e-3" pos="0 0.0925 0" group="2" rgba="0 1 0 1" />
                             </body>
                         </body>
                     </body>
@@ -105,10 +111,13 @@
         <pair geom1="wrist3"    geom2="object1" />
         <pair geom1="object2"   geom2="table"   />
         <pair geom1="wrist3"    geom2="object2" />
+        <pair geom1="object3"   geom2="table"   />
+        <pair geom1="wrist3"    geom2="object3" />
     </contact>
     <!-- Key frames -->
     <keyframe>
-        <key name="pull_pose" qpos="0.05 0.3 0.045 1 0 0 0 0.05 0.4 0.045 1 0 0 0 0.125 -0.75 1.5 -1 -1 0" />
+        <key name="pull_pose_3objects" qpos="0.05 0.2 0.045 1 0 0 0 0.05 0.25 0.045 1 0 0 0 0.06 0.3 0.045 1 0 0 0 0.125 -0.75 1.5 -1 -1 0" />
+<!--        <key name="pull_pose_2objects" qpos="0.05 0.2 0.045 1 0 0 0 0.05 0.3 0.045 1 0 0 0 0.125 -0.75 1.5 -1 -1 0" />-->
 <!--        <key name="ur3_pull_pose" qpos="0.5 -0.75 1.75 -1 -1 0" />-->
 <!--        <key name="ur3_push_pose" qpos="0.35 -0.95 2.25 -1.25 1.5 0" />-->
     </keyframe>

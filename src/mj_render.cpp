@@ -26,7 +26,7 @@ MjRender::MjRender(mjModel* model, mjData* data)
     if( !glfwInit() )
         mju_error("Could not initialize GLFW");
     // create window, make OpenGL context current, request v-sync
-    window = glfwCreateWindow(1280, 800, "Simulation Rendering", NULL, NULL);
+    window = glfwCreateWindow(1280, 730, "Simulation Rendering", NULL, NULL);
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1);
     // initialize visualization data structures

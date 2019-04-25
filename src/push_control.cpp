@@ -22,7 +22,7 @@ PushControl::PushControl(const mjModel* model) : m(model)
     Kp = 1; Kd = 0;
 }
 
-void PushControl::setControl(mjData* d, Eigen::VectorXd eePosD, Eigen::VectorXd eeQuatD)
+void PushControl::setControl(mjData* d, const Eigen::VectorXd eePosD, const Eigen::VectorXd eeQuatD)
 {
     // get end-effector position
     mju_copy(eePos.data(),  d->site_xpos+eeSiteID*3, 3);

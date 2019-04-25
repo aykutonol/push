@@ -14,7 +14,7 @@ public:
     PushControl(const mjModel* model);
     ~PushControl() {}
     /// Functions
-    void setControl(mjData* d, Eigen::VectorXd eePosD, Eigen::VectorXd eeQuatD);
+    void setControl(mjData* d, const Eigen::VectorXd eePosD, const Eigen::VectorXd eeQuatD);
     /// Model parameters
     int *dAct;
     int eeBodyID, eeSiteID;

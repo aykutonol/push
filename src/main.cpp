@@ -1,17 +1,22 @@
 #include "push_control.h"
 #include "mj_render.h"
 
+void addSeparator()
+{
+    std::cout << "\n=======================================================\n";
+}
 
 int main()
 {
-    /// Initialize MuJoCo
+    /// Initialization
     // activate MuJoCo license
     const char* mjKeyPath = std::getenv("MJ_KEY");
     mj_activate(mjKeyPath);
     // load the model
     mjModel* m = mj_loadXML("/home/aykut/Development/push_ws/src/push/model/ur3e_push.xml", NULL, NULL, 0);
+    addSeparator();
     if( !m ) mju_error("ERROR: Model cannot be loaded.");
-    else     std::cout << "INFO: Model successfully loaded.\n";
+    else     std::cout << "INFO: Model successfully loaded.";
     // make data
     mjData* d = mj_makeData(m);
     mju_copy(d->qpos, m->key_qpos, m->nq);
@@ -19,29 +24,49 @@ int main()
     // create objects
     MjRender mr(m, d);
     PushControl pc(m);
-
-
-
-    int objGeomID = mj_name2id(m, mjOBJ_GEOM, "object1");
-    int objSiteID = mj_name2id(m, mjOBJ_SITE, "object1");
-    double rScallop = m->geom_size[objGeomID*3];
-    std::cout << "r = " << rScallop << "\n\n\n";
-
-    Eigen::VectorXd eePosD(3), eeQuatD(4), objPos(3), objPosD(3);
-    // aligned with -x axis
+    /// Model parameters
+    int objSiteID;
+    double rScallop = m->geom_size[mj_name2id(m, mjOBJ_GEOM, "object1")*3];
+    /// Pose variables
+    Eigen::VectorXd eePos0(3), eePosD(3), eeQuatD(4), objPos(3), objPosD(3);
+    mju_copy(eePos0.data(), d->site_xpos+pc.eeSiteID*3, 3);
+    /// Task definition
+    // push direction is aligned with the -x axis
     int axis = 0;   // x axis, i.e., first component
     int dir = -1;   // direction
-    double target = -0.1;
+    double targetLine = -0.1;
     eeQuatD << 0, 0.7071, 0.7071, 0;
     double stepSize = 0.05;
-
+    /// Objects
+    int nObj = 3;
+    std::vector<std::string> objectList;
+    addSeparator();
+    std::cout << "INFO: Objects to be pushed:\n";
+    for( int i=0; i<nObj; i++ )
+    {
+        objectList.push_back("object"+std::to_string(i+1));
+        std::cout << "\t\t" << objectList[i] << "\n";
+    }
+    addSeparator();
+    std::cout << "Target line: x = " << targetLine;
+    addSeparator();
     /// Simulation
-    bool stop = false;
+    bool stop = false, success = false, switchObject = false, go2Object=true;
     int tStep = 0;
+    int objID = 0;
+
+    bool letsMakeAVideo = true;
+
     while( !glfwWindowShouldClose(mr.window) )
     {
+        if( letsMakeAVideo )
+        {
+            mr.paused = true;
+            letsMakeAVideo = false;
+        }
         if( !mr.paused )
         {
+            objSiteID = mj_name2id(m, mjOBJ_SITE, objectList[objID].c_str());
             mjtNum simstart = d->time;
             while (d->time - simstart < 1.0/60.0 && !stop)
             {
@@ -50,24 +75,75 @@ int main()
                 // set reference for the controller
                 if( tStep%10 == 0 )
                 {
-                    // get the site position
-                    mju_copy(eePosD.data(), d->site_xpos+objSiteID*3, 3);
-                    // add the radius of the object
-                    eePosD[axis] += rScallop;
-                    // check if task is completed
-                    if( eePosD[0] < target )
+                    // Push the object
+                    if( !go2Object && !switchObject )
                     {
-                        printf("\nINFO: Task completed for %s.\n\n", "object1");
-                        stop = true;
+                        // set the site position as target
+                        mju_copy(eePosD.data(), d->site_xpos+objSiteID*3, 3);
+                        // shift it by radius in the direction to opposite to the push direction
+                        eePosD[axis] += -dir*rScallop;
                     }
-                    // if not complete, set new target along -x axis
-                    eePosD[axis] += dir*stepSize;
+                    // go to object
+                    else if( go2Object && !switchObject )
+                    {
+                        // set the site position as target
+                        mju_copy(eePosD.data(), d->site_xpos+objSiteID*3, 3);
+                        // shift it by 10 cm in the direction opposite to the push direction
+                        eePosD[axis] += -dir*0.1;
+                        // check if initial push pose reached
+                        if( tStep>0 && pc.e.head(3).norm() < 5e-3 )
+                        {
+                            std::cout << "\nINFO: Initial push pose reached.\n";
+                            addSeparator();
+                            go2Object = false;
+                            tStep = 0;
+                        }
+                    }
+                    // go to start pose
+                    else if( !go2Object && switchObject )
+                    {
+                        eePosD = eePos0;
+                        // check if start pose reached
+                        if( pc.e.head(3).norm() < 5e-3 )
+                        {
+                            std::cout << "\nINFO: Start pose reached.\n";
+                            addSeparator();
+                            switchObject = false;
+                            go2Object = true;
+                            tStep = -1;
+                        }
+                    }
+                    // During task execution
+                    if( !go2Object && !switchObject )
+                    {
+                        // check if task is completed
+                        if( eePosD[0] < targetLine )
+                        {
+                            success=true;
+                            printf("\nINFO: Task completed for %s.\n", objectList[objID].c_str());
+                            if( objID == nObj-1 )
+                                stop = true;
+                        }
+                            // set new target along the push direction until the task is completed
+                        else
+                        {
+                            eePosD[axis] += dir*stepSize;
+                        }
+                    }
                 }
                 // calculate and set control input
                 pc.setControl(d, eePosD, eeQuatD);
                 // step part 2
                 mj_step2(m, d);
                 tStep++;
+                if( success )
+                {
+                    success = false;
+                    switchObject = true;
+                    tStep = 0;
+                    if( !stop )
+                        objID++;
+                }
             }
             if( fmod(d->time, 1.0) < 2e-2 && !stop )
             {
@@ -77,8 +153,8 @@ int main()
                              "\nposition error: " << pc.e.head(3).transpose() <<
                              "\norientation error: " << pc.e.tail(3).transpose() <<
                              "\nnorm(pe): " << pc.e.head(3).norm() << ", norm(oe): " << pc.e.tail(3).norm() <<
-                             "\nobjPos: " << objPos.transpose() <<
-                             "\n=======================================================\n";
+                             "\nobjPos: " << objPos.transpose();
+                addSeparator();
             }
         }
         mr.render();
